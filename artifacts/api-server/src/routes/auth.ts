@@ -20,22 +20,32 @@ function getRedirectUri(): string {
   return `http://localhost:${process.env.PORT || 5000}/api/auth/discord/callback`;
 }
 
-// GET /api/auth/discord — start OAuth2 flow
-router.get("/auth/discord", (req, res) => {
-  const clientId = process.env.DISCORD_CLIENT_ID;
-  if (!clientId) {
-    res.status(500).json({ error: "DISCORD_CLIENT_ID not configured" });
-    return;
+function getRedirectUri(): string {
+  // Vercel Production / Preview
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/api/auth/discord/callback`;
   }
-  const redirectUri = getRedirectUri();
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    response_type: "code",
-    scope: "identify email",
-  });
-  res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
-});
+
+  // Vercel Development (if using vercel dev)
+  if (process.env.VERCEL_ENV === 'development') {
+    return `http://localhost:${process.env.PORT || 5000}/api/auth/discord/callback`;
+  }
+
+  // Replit
+  const domains = process.env.REPLIT_DOMAINS;
+  if (domains) {
+    const primaryDomain = domains.split(",")[0].trim();
+    return `https://${primaryDomain}/api/auth/discord/callback`;
+  }
+
+  const devDomain = process.env.REPLIT_DEV_DOMAIN;
+  if (devDomain) {
+    return `https://${devDomain}/api/auth/discord/callback`;
+  }
+
+  // Local fallback
+  return `http://localhost:${process.env.PORT || 5000}/api/auth/discord/callback`;
+}
 
 // GET /api/auth/discord/callback — handle OAuth2 callback
 router.get("/auth/discord/callback", async (req, res) => {
