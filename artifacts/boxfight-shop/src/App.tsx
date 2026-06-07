@@ -9,6 +9,7 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import Info from "@/pages/info";
+import TokenSettings from "@/pages/token-settings";
 import AccessDenied from "@/pages/access-denied";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/layout/app-shell";
@@ -21,7 +22,7 @@ function Router() {
       <Route path="/" component={Disclaimer} />
       <Route path="/login" component={Login} />
       <Route path="/access-denied" component={AccessDenied} />
-      
+
       <Route path="/dashboard">
         <AuthGuard>
           <AppShell>
@@ -29,7 +30,15 @@ function Router() {
           </AppShell>
         </AuthGuard>
       </Route>
-      
+
+      <Route path="/token-settings">
+        <AuthGuard>
+          <AppShell>
+            <TokenSettings />
+          </AppShell>
+        </AuthGuard>
+      </Route>
+
       <Route path="/admin">
         <AuthGuard requireAdmin>
           <AppShell>

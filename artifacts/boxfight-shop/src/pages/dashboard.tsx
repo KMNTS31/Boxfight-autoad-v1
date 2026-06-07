@@ -3,15 +3,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  useGetMe,
-  getGetMeQueryKey,
-  useValidateToken,
-  useSendMessage,
-  useListMessageJobs,
-  getListMessageJobsQueryKey,
-  useStopMessageJob,
-  useGetStats,
-  getGetStatsQueryKey,
+  useGetMe, getGetMeQueryKey,
+  useValidateToken, useSendMessage,
+  useListMessageJobs, getListMessageJobsQueryKey,
+  useStopMessageJob, useGetStats, getGetStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -21,27 +16,45 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, Play, Square, RefreshCcw, Activity, Users, Hash, MessageSquare } from "lucide-react";
+import { KeyRound, Play, Square, RefreshCcw, Activity, Users, MessageSquare, Hash, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const messageSchema = z.object({
-  message: z.string().min(1, "Message content is required"),
-  channelId: z.string().min(1, "Channel ID is required"),
-  delaySeconds: z.coerce.number().min(0, "Delay must be at least 0"),
-  intervalSeconds: z.coerce.number().min(1, "Interval must be at least 1"),
-  repeatCount: z.coerce.number().min(0, "Repeat count must be at least 0 (0 for infinite)"),
+  message: z.string().min(1, "Required"),
+  channelId: z.string().min(1, "Required"),
+  delaySeconds: z.coerce.number().min(0),
+  intervalSeconds: z.coerce.number().min(1),
+  repeatCount: z.coerce.number().min(0),
 });
-
 type MessageFormValues = z.infer<typeof messageSchema>;
+
+function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number | undefined; color: string }) {
+  return (
+    <div className={`group relative overflow-hidden rounded-xl border bg-[#0a0a0a] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 hover:shadow-xl hover:shadow-black/50 cursor-default ${color}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-mono text-[10px] text-white/30 tracking-widest uppercase mb-1">{label}</p>
+          <p className="text-3xl font-black text-white tabular-nums">
+            {value ?? <span className="text-white/20">—</span>}
+          </p>
+        </div>
+        <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] group-hover:bg-white/[0.07] transition-colors">
+          <Icon className="w-5 h-5 text-white/40" />
+        </div>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: user } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
-  
-  const [discordToken, setDiscordToken] = useState<string>("");
-  const [tokenInputStr, setTokenInputStr] = useState<string>("");
-  const [validatedUser, setValidatedUser] = useState<{username?: string | null, avatar?: string | null, discriminator?: string | null} | null>(null);
+
+  const [discordToken, setDiscordToken] = useState("");
+  const [tokenInputStr, setTokenInputStr] = useState("");
+  const [validatedUser, setValidatedUser] = useState<{ username?: string | null; avatar?: string | null } | null>(null);
 
   const validateTokenMutation = useValidateToken();
   const sendMessageMutation = useSendMessage();
@@ -50,296 +63,190 @@ export default function Dashboard() {
   const { data: jobs, isLoading: jobsLoading } = useListMessageJobs({
     query: { queryKey: getListMessageJobsQueryKey() }
   });
-
   const { data: stats } = useGetStats({
-    query: { queryKey: getGetStatsQueryKey(), enabled: !!user?.isAdmin }
+    query: { queryKey: getGetStatsQueryKey() }
   });
 
   const form = useForm<MessageFormValues>({
     resolver: zodResolver(messageSchema),
-    defaultValues: {
-      message: "",
-      channelId: "",
-      delaySeconds: 0,
-      intervalSeconds: 60,
-      repeatCount: 1,
-    },
+    defaultValues: { message: "", channelId: "", delaySeconds: 0, intervalSeconds: 60, repeatCount: 1 },
   });
 
   const handleValidateToken = () => {
     if (!tokenInputStr) return;
-    
     validateTokenMutation.mutate({ data: { token: tokenInputStr } }, {
       onSuccess: (data) => {
         if (data.valid) {
           setDiscordToken(tokenInputStr);
-          setValidatedUser({
-            username: data.username,
-            avatar: data.avatar,
-            discriminator: data.discriminator
-          });
-          toast({
-            title: "Token Validated",
-            description: `Connected as ${data.username}`,
-          });
+          setValidatedUser({ username: data.username, avatar: data.avatar });
+          toast({ title: "Token validated", description: `Connected as ${data.username}` });
         } else {
-          toast({
-            variant: "destructive",
-            title: "Validation Failed",
-            description: data.message || "Invalid token provided.",
-          });
+          toast({ variant: "destructive", title: "Invalid token", description: data.message });
         }
       },
-      onError: () => {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to validate token.",
-        });
-      }
+      onError: () => toast({ variant: "destructive", title: "Error", description: "Failed to validate token." }),
     });
   };
 
   const onSubmit = (data: MessageFormValues) => {
     if (!discordToken) return;
-
-    sendMessageMutation.mutate({
-      data: {
-        token: discordToken,
-        ...data,
-      }
-    }, {
+    sendMessageMutation.mutate({ data: { token: discordToken, ...data } }, {
       onSuccess: () => {
-        toast({
-          title: "Job Started",
-          description: "Message sequence has been queued.",
-        });
+        toast({ title: "Job started", description: "Message sequence queued." });
         queryClient.invalidateQueries({ queryKey: getListMessageJobsQueryKey() });
         form.reset();
       },
-      onError: () => {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to start job.",
-        });
-      }
+      onError: () => toast({ variant: "destructive", title: "Error", description: "Failed to start job." }),
     });
   };
 
-  const handleStopJob = (jobId: string) => {
+  const handleStop = (jobId: string) => {
     stopJobMutation.mutate({ jobId }, {
       onSuccess: () => {
-        toast({
-          title: "Job Stopped",
-          description: "The sequence has been terminated.",
-        });
+        toast({ title: "Job stopped" });
         queryClient.invalidateQueries({ queryKey: getListMessageJobsQueryKey() });
       },
-      onError: () => {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to stop job.",
-        });
-      }
+      onError: () => toast({ variant: "destructive", title: "Error", description: "Failed to stop job." }),
     });
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400">
       <div>
-        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Command Center</h1>
-        <p className="text-muted-foreground mt-1">Configure and manage your automated sequences.</p>
+        <h1 className="text-xl font-display font-black tracking-widest text-white uppercase">Command Center</h1>
+        <p className="text-white/30 font-mono text-xs tracking-wide mt-0.5">
+          welcome back, <span className="text-white/50">{user?.username}</span>
+        </p>
       </div>
 
-      {user?.isAdmin && stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-card/50 backdrop-blur-sm border-border">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="p-3 bg-primary/10 text-primary rounded-lg"><Users className="w-5 h-5" /></div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Authorized Users</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalAuthorizedUsers}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/50 backdrop-blur-sm border-border">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="p-3 bg-secondary/10 text-secondary rounded-lg"><Activity className="w-5 h-5" /></div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Jobs</p>
-                <p className="text-2xl font-bold text-foreground">{stats.activeJobs}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/50 backdrop-blur-sm border-border">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="p-3 bg-accent/50 text-foreground rounded-lg"><KeyRound className="w-5 h-5" /></div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Tokens</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalTokens}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/50 backdrop-blur-sm border-border">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="p-3 bg-chart-3/10 text-chart-3 rounded-lg"><MessageSquare className="w-5 h-5" /></div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Messages Sent</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalMessagesSent}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Stats — visible to all */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard icon={Users} label="Authorized Users" value={stats?.totalAuthorizedUsers} color="border-white/[0.07]" />
+        <StatCard icon={Activity} label="Active Jobs" value={stats?.activeJobs} color="border-white/[0.07]" />
+        <StatCard icon={MessageSquare} label="Messages Sent" value={stats?.totalMessagesSent} color="border-white/[0.07]" />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <KeyRound className="w-5 h-5 text-primary" />
-                Discord Connection
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <div className="lg:col-span-3 space-y-5">
+          {/* Token connector */}
+          <Card className="bg-[#0a0a0a] border-white/[0.07] shadow-xl shadow-black/30">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-sm text-white font-mono tracking-wider">
+                <KeyRound className="w-4 h-4 text-white/40" />
+                discord connection
               </CardTitle>
-              <CardDescription>Provide a user token to execute actions on behalf of the account.</CardDescription>
+              <CardDescription className="text-white/25 text-xs font-mono">Provide a user token to execute actions on behalf of the account.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               {discordToken ? (
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between p-4 bg-white/[0.03] rounded-lg border border-white/[0.08]">
+                  <div className="flex items-center gap-3">
                     {validatedUser?.avatar ? (
-                      <img src={validatedUser.avatar} alt="Avatar" className="w-10 h-10 rounded-full border border-primary/50" />
+                      <img src={validatedUser.avatar} alt="" className="w-9 h-9 rounded-full border border-white/20 object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
+                      <div className="w-9 h-9 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-sm font-bold text-white/60">
                         {validatedUser?.username?.[0]?.toUpperCase()}
                       </div>
                     )}
                     <div>
-                      <p className="font-bold text-foreground">{validatedUser?.username}</p>
-                      <p className="text-xs text-muted-foreground font-mono">Token Active</p>
+                      <p className="text-sm font-bold text-white">{validatedUser?.username}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span className="text-[10px] font-mono text-emerald-400/80">token active</span>
+                      </div>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setDiscordToken("")}>
-                    Change Token
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white/30 hover:text-white/60 font-mono text-xs h-8 px-3 hover:bg-white/5 transition-all"
+                    onClick={() => { setDiscordToken(""); setValidatedUser(null); setTokenInputStr(""); }}
+                  >
+                    change
                   </Button>
                 </div>
               ) : (
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   <Input
                     type="password"
                     placeholder="Enter Discord User Token"
                     value={tokenInputStr}
                     onChange={(e) => setTokenInputStr(e.target.value)}
-                    className="font-mono"
+                    onKeyDown={(e) => e.key === "Enter" && handleValidateToken()}
+                    className="font-mono text-sm bg-white/[0.03] border-white/[0.08] text-white placeholder:text-white/15 focus-visible:ring-white/20 focus-visible:border-white/20 h-10 transition-all"
                   />
-                  <Button 
-                    onClick={handleValidateToken} 
+                  <Button
+                    onClick={handleValidateToken}
                     disabled={!tokenInputStr || validateTokenMutation.isPending}
-                    className="shrink-0"
+                    className="h-10 px-5 bg-white text-black font-bold font-mono text-xs tracking-widest uppercase hover:bg-white/90 active:scale-[0.97] transition-all duration-150 shrink-0 shadow-lg shadow-white/10 hover:shadow-white/20 hover:-translate-y-px"
                   >
-                    {validateTokenMutation.isPending ? <RefreshCcw className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Validate
+                    {validateTokenMutation.isPending
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : "validate"}
                   </Button>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className={!discordToken ? "opacity-50 pointer-events-none" : ""}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Play className="w-5 h-5 text-secondary" />
-                Sequence Configuration
+          {/* Message sequence */}
+          <Card className={`bg-[#0a0a0a] border-white/[0.07] shadow-xl shadow-black/30 transition-all duration-300 ${!discordToken ? "opacity-40 pointer-events-none" : ""}`}>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-sm text-white font-mono tracking-wider">
+                <Play className="w-4 h-4 text-white/40" />
+                sequence configuration
               </CardTitle>
-              <CardDescription>Setup your automated message payload and timing.</CardDescription>
+              <CardDescription className="text-white/25 text-xs font-mono">Configure your automated message payload and timing.</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="channelId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Channel ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. 123456789012345678" className="font-mono" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Message Content</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Type your message here..." 
-                            className="min-h-[120px] font-mono text-sm resize-none" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                  <FormField control={form.control} name="channelId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white/50 font-mono text-xs tracking-wider uppercase">Channel ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. 123456789012345678" className="font-mono text-sm bg-white/[0.03] border-white/[0.08] text-white placeholder:text-white/15 focus-visible:ring-white/20 h-10 transition-all" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="delaySeconds"
-                      render={({ field }) => (
+                  <FormField control={form.control} name="message" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white/50 font-mono text-xs tracking-wider uppercase">Message Content</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Type your message..." className="min-h-[100px] font-mono text-sm bg-white/[0.03] border-white/[0.08] text-white placeholder:text-white/15 focus-visible:ring-white/20 resize-none transition-all" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { name: "delaySeconds" as const, label: "Delay (sec)" },
+                      { name: "intervalSeconds" as const, label: "Interval (sec)" },
+                      { name: "repeatCount" as const, label: "Repeats (0=∞)" },
+                    ].map(({ name, label }) => (
+                      <FormField key={name} control={form.control} name={name} render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Initial Delay (sec)</FormLabel>
+                          <FormLabel className="text-white/50 font-mono text-[10px] tracking-wider uppercase">{label}</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" {...field} />
+                            <Input type="number" min="0" className="font-mono text-sm bg-white/[0.03] border-white/[0.08] text-white focus-visible:ring-white/20 h-9 transition-all" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="intervalSeconds"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Interval (sec)</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="1" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="repeatCount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Repeat Count</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="0" {...field} />
-                          </FormControl>
-                          <FormDescription className="text-[10px]">0 = Infinite</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      )} />
+                    ))}
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full font-bold tracking-wide" 
-                    size="lg"
+                  <Button
+                    type="submit"
+                    className="w-full h-11 font-bold font-mono tracking-widest uppercase text-xs bg-white text-black hover:bg-white/90 active:scale-[0.98] transition-all duration-150 shadow-lg shadow-white/10 hover:shadow-white/20 hover:-translate-y-px"
                     disabled={sendMessageMutation.isPending}
                   >
-                    {sendMessageMutation.isPending ? <RefreshCcw className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                    Initialize Sequence
+                    {sendMessageMutation.isPending
+                      ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />initializing...</>
+                      : <><Play className="w-4 h-4 mr-2" />initialize sequence</>}
                   </Button>
                 </form>
               </Form>
@@ -347,53 +254,75 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="space-y-8">
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-chart-3" />
-                Active Jobs
+        {/* Active jobs */}
+        <div className="lg:col-span-2">
+          <Card className="bg-[#0a0a0a] border-white/[0.07] shadow-xl shadow-black/30 h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-sm text-white font-mono tracking-wider">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-white/40" />
+                  active jobs
+                </div>
+                {jobs && jobs.length > 0 && (
+                  <span className="text-[10px] text-white/25 font-mono">{jobs.length} running</span>
+                )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-auto p-0 px-6 pb-6">
+            <CardContent className="px-0 pb-0">
               {jobsLoading ? (
-                <div className="flex justify-center py-8">
-                  <RefreshCcw className="w-6 h-6 animate-spin text-muted-foreground" />
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-5 h-5 animate-spin text-white/20" />
                 </div>
               ) : jobs && jobs.length > 0 ? (
-                <div className="space-y-4">
+                <div className="divide-y divide-white/[0.05]">
                   {jobs.map((job) => (
-                    <div key={job.id} className="p-4 rounded-lg bg-muted/30 border border-border space-y-3">
-                      <div className="flex items-center justify-between">
+                    <div key={job.id} className="px-5 py-4 hover:bg-white/[0.02] transition-colors">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <Hash className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-mono text-sm font-medium">{job.channelId}</span>
+                          {job.status === "running" && (
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
+                          )}
+                          <Hash className="w-3 h-3 text-white/30" />
+                          <span className="font-mono text-xs text-white/70">{job.channelId}</span>
                         </div>
-                        <Badge variant={job.status === "running" ? "default" : job.status === "pending" ? "secondary" : "outline"}
-                          className={job.status === "running" ? "bg-secondary text-secondary-foreground" : ""}
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] font-mono px-2 h-5 border-0 ${
+                            job.status === "running" ? "bg-emerald-500/10 text-emerald-400" :
+                            job.status === "pending" ? "bg-yellow-500/10 text-yellow-400" :
+                            "bg-white/5 text-white/30"
+                          }`}
                         >
                           {job.status}
                         </Badge>
                       </div>
-                      
-                      <div className="text-xs text-muted-foreground font-mono truncate">
-                        "{job.message}"
-                      </div>
-                      
-                      <div className="flex items-center justify-between pt-2 border-t border-border">
-                        <div className="text-xs">
-                          <span className="text-foreground font-bold">{job.sentCount}</span> sent
-                          {job.repeatCount > 0 && <span className="text-muted-foreground"> / {job.repeatCount}</span>}
+                      <p className="font-mono text-[11px] text-white/30 truncate mb-3">"{job.message}"</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1 w-16 bg-white/[0.06] rounded-full overflow-hidden">
+                            {job.repeatCount > 0 && (
+                              <div
+                                className="h-full bg-white/30 rounded-full transition-all"
+                                style={{ width: `${Math.min((job.sentCount / job.repeatCount) * 100, 100)}%` }}
+                              />
+                            )}
+                          </div>
+                          <span className="text-[10px] font-mono text-white/30">
+                            {job.sentCount}{job.repeatCount > 0 ? `/${job.repeatCount}` : ""}
+                          </span>
                         </div>
                         {(job.status === "running" || job.status === "pending") && (
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            className="h-7 text-xs px-2"
-                            onClick={() => handleStopJob(job.id)}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2.5 text-[10px] font-mono text-red-400/60 hover:text-red-400 hover:bg-red-900/10 transition-all"
+                            onClick={() => handleStop(job.id)}
                             disabled={stopJobMutation.isPending}
                           >
-                            <Square className="w-3 h-3 mr-1 fill-current" /> Stop
+                            <Square className="w-2.5 h-2.5 mr-1 fill-current" />stop
                           </Button>
                         )}
                       </div>
@@ -401,8 +330,8 @@ export default function Dashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
-                  No active sequences.
+                <div className="mx-4 mb-4 text-center py-10 text-white/15 font-mono text-xs border border-dashed border-white/[0.06] rounded-lg">
+                  no active sequences
                 </div>
               )}
             </CardContent>

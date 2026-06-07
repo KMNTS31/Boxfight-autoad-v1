@@ -141,6 +141,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /tokens/mine:
+    get:
+      operationId: listMyTokens
+      tags: [tokens]
+      summary: List tokens added by the current authenticated user
+      responses:
+        "200":
+          description: List of stored tokens for current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoredToken"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /tokens:
     get:
       operationId: listTokens
@@ -250,7 +271,7 @@ paths:
     get:
       operationId: getStats
       tags: [stats]
-      summary: Get dashboard statistics (admin only)
+      summary: Get dashboard statistics (auth required; admins get extended fields)
       responses:
         "200":
           description: Dashboard stats
@@ -479,12 +500,19 @@ components:
           type: integer
         activeJobs:
           type: integer
+        totalMessagesSent:
+          type: integer
         totalTokens:
           type: integer
-        totalMessagesSent:
+        totalJobs:
+          type: integer
+        pendingJobs:
+          type: integer
+        stoppedJobs:
+          type: integer
+        completedJobs:
           type: integer
       required:
         - totalAuthorizedUsers
         - activeJobs
-        - totalTokens
         - totalMessagesSent

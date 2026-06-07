@@ -496,6 +496,83 @@ export const useRemoveAuthorizedUser = <TError = ErrorType<ErrorResponse>,
       return useMutation(getRemoveAuthorizedUserMutationOptions(options));
     }
 
+export const getListMyTokensUrl = () => {
+
+
+
+
+  return `/api/tokens/mine`
+}
+
+/**
+ * @summary List tokens added by the current authenticated user
+ */
+export const listMyTokens = async ( options?: RequestInit): Promise<StoredToken[]> => {
+
+  return customFetch<StoredToken[]>(getListMyTokensUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyTokensQueryKey = () => {
+    return [
+    `/api/tokens/mine`
+    ] as const;
+    }
+
+
+export const getListMyTokensQueryOptions = <TData = Awaited<ReturnType<typeof listMyTokens>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTokens>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyTokensQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyTokens>>> = ({ signal }) => listMyTokens({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyTokens>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyTokensQueryResult = NonNullable<Awaited<ReturnType<typeof listMyTokens>>>
+export type ListMyTokensQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List tokens added by the current authenticated user
+ */
+
+export function useListMyTokens<TData = Awaited<ReturnType<typeof listMyTokens>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTokens>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyTokensQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListTokensUrl = () => {
 
 
@@ -871,7 +948,7 @@ export const getGetStatsUrl = () => {
 }
 
 /**
- * @summary Get dashboard statistics (admin only)
+ * @summary Get dashboard statistics (auth required; admins get extended fields)
  */
 export const getStats = async ( options?: RequestInit): Promise<DashboardStats> => {
 
@@ -918,7 +995,7 @@ export type GetStatsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get dashboard statistics (admin only)
+ * @summary Get dashboard statistics (auth required; admins get extended fields)
  */
 
 export function useGetStats<TData = Awaited<ReturnType<typeof getStats>>, TError = ErrorType<unknown>>(

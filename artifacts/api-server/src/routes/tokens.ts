@@ -25,6 +25,21 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+function buildAvatarUrl(userId: string, avatarHash: string | null): string | null {
+  if (!avatarHash) return null;
+  if (avatarHash.startsWith("http")) return avatarHash; // already a full URL
+  return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png`;
+}
+
+function serializeToken(t: typeof storedTokensTable.$inferSelect) {
+  return {
+    ...t,
+    discordAvatar: buildAvatarUrl(t.discordUserId, t.discordAvatar),
+    addedAt: t.addedAt.toISOString(),
+    lastValidated: t.lastValidated?.toISOString() ?? null,
+  };
+}
+
 // POST /api/tokens/validate
 router.post("/tokens/validate", requireAuth, async (req, res) => {
   try {
@@ -36,18 +51,12 @@ router.post("/tokens/validate", requireAuth, async (req, res) => {
       return;
     }
 
-    // Validate against Discord API using the user token
     const discordRes = await fetch("https://discord.com/api/v10/users/@me", {
-      headers: {
-        Authorization: token,
-      },
+      headers: { Authorization: token },
     });
 
     if (!discordRes.ok) {
-      res.json({
-        valid: false,
-        message: "Invalid token — Discord rejected it",
-      });
+      res.json({ valid: false, message: "Invalid token — Discord rejected it" });
       return;
     }
 
@@ -58,7 +67,8 @@ router.post("/tokens/validate", requireAuth, async (req, res) => {
       avatar: string | null;
     };
 
-    // Upsert the token in the DB
+    const avatarUrl = buildAvatarUrl(discordUser.id, discordUser.avatar);
+
     const existing = await db
       .select()
       .from(storedTokensTable)
@@ -71,7 +81,7 @@ router.post("/tokens/validate", requireAuth, async (req, res) => {
         .set({
           token,
           discordUsername: discordUser.username,
-          discordAvatar: discordUser.avatar,
+          discordAvatar: avatarUrl,
           addedByDiscordId: sessionUser.id,
           addedByUsername: sessionUser.username,
           lastValidated: new Date(),
@@ -81,7 +91,7 @@ router.post("/tokens/validate", requireAuth, async (req, res) => {
       await db.insert(storedTokensTable).values({
         discordUserId: discordUser.id,
         discordUsername: discordUser.username,
-        discordAvatar: discordUser.avatar ?? null,
+        discordAvatar: avatarUrl,
         token,
         addedByDiscordId: sessionUser.id,
         addedByUsername: sessionUser.username,
@@ -94,7 +104,7 @@ router.post("/tokens/validate", requireAuth, async (req, res) => {
       discordUserId: discordUser.id,
       username: discordUser.username,
       discriminator: discordUser.discriminator,
-      avatar: discordUser.avatar,
+      avatar: avatarUrl,
       message: "Token is valid",
     });
   } catch (err) {
@@ -103,17 +113,26 @@ router.post("/tokens/validate", requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/tokens/mine — tokens added by the current user
+router.get("/tokens/mine", requireAuth, async (req, res) => {
+  try {
+    const sessionUser = (req.session as any).user;
+    const tokens = await db
+      .select()
+      .from(storedTokensTable)
+      .where(eq(storedTokensTable.addedByDiscordId, sessionUser.id));
+    res.json(tokens.map(serializeToken));
+  } catch (err) {
+    logger.error({ err }, "List my tokens error");
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // GET /api/tokens (admin only)
 router.get("/tokens", requireAuth, requireAdmin, async (req, res) => {
   try {
     const tokens = await db.select().from(storedTokensTable);
-    res.json(
-      tokens.map((t) => ({
-        ...t,
-        addedAt: t.addedAt.toISOString(),
-        lastValidated: t.lastValidated?.toISOString() ?? null,
-      }))
-    );
+    res.json(tokens.map(serializeToken));
   } catch (err) {
     logger.error({ err }, "List tokens error");
     res.status(500).json({ error: "Server error" });

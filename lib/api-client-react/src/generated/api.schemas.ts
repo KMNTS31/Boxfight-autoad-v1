@@ -125,8 +125,12 @@ export interface MessageJob {
 export interface DashboardStats {
   totalAuthorizedUsers: number;
   activeJobs: number;
-  totalTokens: number;
   totalMessagesSent: number;
+  totalTokens?: number;
+  totalJobs?: number;
+  pendingJobs?: number;
+  stoppedJobs?: number;
+  completedJobs?: number;
 }
 
 export type ListAuthorizedUsersParams = {

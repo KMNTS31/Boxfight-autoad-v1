@@ -84,6 +84,23 @@ export const RemoveAuthorizedUserResponse = zod.object({
 
 
 /**
+ * @summary List tokens added by the current authenticated user
+ */
+export const ListMyTokensResponseItem = zod.object({
+  "id": zod.number(),
+  "discordUserId": zod.string(),
+  "discordUsername": zod.string(),
+  "discordAvatar": zod.string().nullish(),
+  "token": zod.string(),
+  "addedAt": zod.string(),
+  "addedByDiscordId": zod.string(),
+  "addedByUsername": zod.string(),
+  "lastValidated": zod.string().nullish()
+})
+export const ListMyTokensResponse = zod.array(ListMyTokensResponseItem)
+
+
+/**
  * @summary List all stored user tokens with Discord user info (admin only)
  */
 export const ListTokensResponseItem = zod.object({
@@ -177,13 +194,17 @@ export const StopMessageJobResponse = zod.object({
 
 
 /**
- * @summary Get dashboard statistics (admin only)
+ * @summary Get dashboard statistics (auth required; admins get extended fields)
  */
 export const GetStatsResponse = zod.object({
   "totalAuthorizedUsers": zod.number(),
   "activeJobs": zod.number(),
-  "totalTokens": zod.number(),
-  "totalMessagesSent": zod.number()
+  "totalMessagesSent": zod.number(),
+  "totalTokens": zod.number().optional(),
+  "totalJobs": zod.number().optional(),
+  "pendingJobs": zod.number().optional(),
+  "stoppedJobs": zod.number().optional(),
+  "completedJobs": zod.number().optional()
 })
 
 
