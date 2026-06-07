@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "! boxfight shop"
+version = "1.0.0"
+id = "artifacts/boxfight-shop"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24360
+
+[services.development]
+run = "pnpm --filter @workspace/boxfight-shop run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/boxfight-shop", "run", "build" ]
+publicDir = "artifacts/boxfight-shop/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24360"
+BASE_PATH = "/"

@@ -3,20 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for ! boxfight shop Discord dashboard
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User management
+  - name: tokens
+    description: Discord token management
+  - name: messages
+    description: Message sending operations
+  - name: stats
+    description: Dashboard statistics
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +33,232 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out current user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /users/authorized:
+    get:
+      operationId: listAuthorizedUsers
+      tags: [users]
+      summary: List all authorized users (admin only)
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search query to filter users
+      responses:
+        "200":
+          description: List of authorized users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuthorizedUser"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: addAuthorizedUser
+      tags: [users]
+      summary: Add an authorized user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizedUserInput"
+      responses:
+        "201":
+          description: User authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizedUser"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/authorized/{discordId}:
+    delete:
+      operationId: removeAuthorizedUser
+      tags: [users]
+      summary: Remove an authorized user (admin only)
+      parameters:
+        - name: discordId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tokens:
+    get:
+      operationId: listTokens
+      tags: [tokens]
+      summary: List all stored user tokens with Discord user info (admin only)
+      responses:
+        "200":
+          description: List of stored tokens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoredToken"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tokens/validate:
+    post:
+      operationId: validateToken
+      tags: [tokens]
+      summary: Validate a Discord user token and store it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenInput"
+      responses:
+        "200":
+          description: Token validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenValidationResult"
+        "400":
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /messages/send:
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a message using a Discord user token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: Message job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageJob"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /messages/jobs:
+    get:
+      operationId: listMessageJobs
+      tags: [messages]
+      summary: List active message jobs for the current user
+      responses:
+        "200":
+          description: List of active message jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MessageJob"
+
+  /messages/jobs/{jobId}:
+    delete:
+      operationId: stopMessageJob
+      tags: [messages]
+      summary: Stop a message job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job stopped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get dashboard statistics (admin only)
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +269,223 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        discriminator:
+          type: string
+        avatar:
+          type: ["string", "null"]
+        isAdmin:
+          type: boolean
+        isAuthorized:
+          type: boolean
+        hasValidToken:
+          type: boolean
+        email:
+          type: ["string", "null"]
+      required:
+        - id
+        - username
+        - discriminator
+        - isAdmin
+        - isAuthorized
+        - hasValidToken
+
+    AuthorizedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        discordId:
+          type: string
+        username:
+          type: string
+        avatar:
+          type: ["string", "null"]
+        authorizedBy:
+          type: string
+        authorizedAt:
+          type: string
+        notes:
+          type: ["string", "null"]
+      required:
+        - id
+        - discordId
+        - username
+        - authorizedBy
+        - authorizedAt
+
+    AuthorizedUserInput:
+      type: object
+      properties:
+        discordId:
+          type: string
+        username:
+          type: string
+        avatar:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - discordId
+        - username
+
+    StoredToken:
+      type: object
+      properties:
+        id:
+          type: integer
+        discordUserId:
+          type: string
+        discordUsername:
+          type: string
+        discordAvatar:
+          type: ["string", "null"]
+        token:
+          type: string
+        addedAt:
+          type: string
+        addedByDiscordId:
+          type: string
+        addedByUsername:
+          type: string
+        lastValidated:
+          type: ["string", "null"]
+      required:
+        - id
+        - discordUserId
+        - discordUsername
+        - token
+        - addedAt
+        - addedByDiscordId
+        - addedByUsername
+
+    TokenInput:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    TokenValidationResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        discordUserId:
+          type: ["string", "null"]
+        username:
+          type: ["string", "null"]
+        avatar:
+          type: ["string", "null"]
+        discriminator:
+          type: ["string", "null"]
+        message:
+          type: string
+      required:
+        - valid
+        - message
+
+    MessageInput:
+      type: object
+      properties:
+        token:
+          type: string
+        channelId:
+          type: string
+        message:
+          type: string
+        delaySeconds:
+          type: integer
+          description: Initial delay in seconds before starting
+        intervalSeconds:
+          type: integer
+          description: Interval between messages in seconds
+        repeatCount:
+          type: integer
+          description: How many times to send (0 = infinite)
+      required:
+        - token
+        - channelId
+        - message
+        - delaySeconds
+        - intervalSeconds
+        - repeatCount
+
+    MessageJob:
+      type: object
+      properties:
+        id:
+          type: string
+        channelId:
+          type: string
+        message:
+          type: string
+        delaySeconds:
+          type: integer
+        intervalSeconds:
+          type: integer
+        repeatCount:
+          type: integer
+        sentCount:
+          type: integer
+        status:
+          type: string
+          enum: [pending, running, stopped, completed, failed]
+        createdAt:
+          type: string
+        discordUserId:
+          type: ["string", "null"]
+        discordUsername:
+          type: ["string", "null"]
+      required:
+        - id
+        - channelId
+        - message
+        - delaySeconds
+        - intervalSeconds
+        - repeatCount
+        - sentCount
+        - status
+        - createdAt
+
+    DashboardStats:
+      type: object
+      properties:
+        totalAuthorizedUsers:
+          type: integer
+        activeJobs:
+          type: integer
+        totalTokens:
+          type: integer
+        totalMessagesSent:
+          type: integer
+      required:
+        - totalAuthorizedUsers
+        - activeJobs
+        - totalTokens
+        - totalMessagesSent
