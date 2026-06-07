@@ -4,23 +4,48 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-const queryClient = new QueryClient();
+import Disclaimer from "@/pages/disclaimer";
+import Login from "@/pages/login";
+import Dashboard from "@/pages/dashboard";
+import Admin from "@/pages/admin";
+import Info from "@/pages/info";
+import AccessDenied from "@/pages/access-denied";
+import { AuthGuard } from "@/components/auth-guard";
+import { AppShell } from "@/components/layout/app-shell";
 
-function Home() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Replit Agent is building...</h1>
-        <p className="mt-2 text-sm text-gray-600">Your app will appear here once it's ready.</p>
-      </div>
-    </div>
-  );
-}
+const queryClient = new QueryClient();
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={Disclaimer} />
+      <Route path="/login" component={Login} />
+      <Route path="/access-denied" component={AccessDenied} />
+      
+      <Route path="/dashboard">
+        <AuthGuard>
+          <AppShell>
+            <Dashboard />
+          </AppShell>
+        </AuthGuard>
+      </Route>
+      
+      <Route path="/admin">
+        <AuthGuard requireAdmin>
+          <AppShell>
+            <Admin />
+          </AppShell>
+        </AuthGuard>
+      </Route>
+
+      <Route path="/info">
+        <AuthGuard requireAdmin>
+          <AppShell>
+            <Info />
+          </AppShell>
+        </AuthGuard>
+      </Route>
+
       <Route component={NotFound} />
     </Switch>
   );
