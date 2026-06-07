@@ -9,10 +9,7 @@ const basePath = process.env.BASE_PATH || "/";
 export default defineConfig({
   base: basePath,
 
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
+  plugins: [react(), tailwindcss()],
 
   resolve: {
     alias: {
@@ -21,7 +18,7 @@ export default defineConfig({
         import.meta.dirname,
         "..",
         "..",
-        "attached_assets",
+        "attached_assets"
       ),
     },
     dedupe: ["react", "react-dom"],
@@ -32,10 +29,12 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    sourcemap: false, // 🔥 fixes your Vercel sourcemap warning
   },
 
   server: {
     port,
+    strictPort: true, // 🔥 prevents random port switching
     host: "0.0.0.0",
     allowedHosts: true,
     fs: {
