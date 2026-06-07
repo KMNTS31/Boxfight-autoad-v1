@@ -90,11 +90,11 @@ export default function Dashboard() {
           });
         }
       },
-      onError: (error) => {
+      onError: () => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: error.error || "Failed to validate token.",
+          description: "Failed to validate token.",
         });
       }
     });
@@ -117,11 +117,11 @@ export default function Dashboard() {
         queryClient.invalidateQueries({ queryKey: getListMessageJobsQueryKey() });
         form.reset();
       },
-      onError: (error) => {
+      onError: () => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: error.error || "Failed to start job.",
+          description: "Failed to start job.",
         });
       }
     });
@@ -136,11 +136,11 @@ export default function Dashboard() {
         });
         queryClient.invalidateQueries({ queryKey: getListMessageJobsQueryKey() });
       },
-      onError: (error) => {
+      onError: () => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: error.error || "Failed to stop job.",
+          description: "Failed to stop job.",
         });
       }
     });

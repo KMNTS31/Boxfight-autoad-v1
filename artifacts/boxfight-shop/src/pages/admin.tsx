@@ -35,9 +35,10 @@ export default function Admin() {
   const [search, setSearch] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  const searchParams = search ? { search } : undefined;
   const { data: users, isLoading } = useListAuthorizedUsers(
-    { query: { params: { search: search || undefined } } },
-    { query: { queryKey: getListAuthorizedUsersQueryKey({ query: { params: { search: search || undefined } } }) } }
+    searchParams,
+    { query: { queryKey: getListAuthorizedUsersQueryKey(searchParams) } }
   );
 
   const addUserMutation = useAddAuthorizedUser();
@@ -61,8 +62,8 @@ export default function Admin() {
         setIsAddModalOpen(false);
         form.reset();
       },
-      onError: (error) => {
-        toast({ variant: "destructive", title: "Error", description: error.error || "Failed to add user." });
+      onError: () => {
+        toast({ variant: "destructive", title: "Error", description: "Failed to add user." });
       }
     });
   };
@@ -74,8 +75,8 @@ export default function Admin() {
           toast({ title: "Access Revoked", description: "User has been removed from authorization list." });
           queryClient.invalidateQueries({ queryKey: getListAuthorizedUsersQueryKey() });
         },
-        onError: (error) => {
-          toast({ variant: "destructive", title: "Error", description: error.error || "Failed to revoke access." });
+        onError: () => {
+          toast({ variant: "destructive", title: "Error", description: "Failed to revoke access." });
         }
       });
     }
