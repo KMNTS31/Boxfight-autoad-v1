@@ -109,12 +109,16 @@ router.get("/auth/discord/callback", async (req, res) => {
       isAuthorized = authUser.length > 0;
     }
 
+    const avatarUrl = discordUser.avatar
+      ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
+      : `https://cdn.discordapp.com/embed/avatars/${parseInt(discordUser.discriminator || "0") % 5}.png`;
+
     // Store in session
     (req.session as any).user = {
       id: discordUser.id,
       username: discordUser.username,
       discriminator: discordUser.discriminator,
-      avatar: discordUser.avatar,
+      avatar: avatarUrl,
       email: discordUser.email ?? null,
       isAdmin,
       isAuthorized,
