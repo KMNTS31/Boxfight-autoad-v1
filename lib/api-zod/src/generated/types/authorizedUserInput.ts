@@ -8,7 +8,7 @@
 
 export interface AuthorizedUserInput {
   discordId: string;
-  username: string;
+  username?: string;
   /** @nullable */
   avatar?: string | null;
   /** @nullable */

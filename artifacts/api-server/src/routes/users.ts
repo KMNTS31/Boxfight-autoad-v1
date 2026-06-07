@@ -61,13 +61,13 @@ router.post("/users/authorized", requireAuth, requireAdmin, async (req, res) => 
     const sessionUser = (req.session as any).user;
     const { discordId, username, avatar, notes } = req.body as {
       discordId: string;
-      username: string;
+      username?: string;
       avatar?: string;
       notes?: string;
     };
 
-    if (!discordId || !username) {
-      res.status(400).json({ error: "discordId and username are required" });
+    if (!discordId) {
+      res.status(400).json({ error: "discordId is required" });
       return;
     }
 
@@ -75,7 +75,7 @@ router.post("/users/authorized", requireAuth, requireAdmin, async (req, res) => 
       .insert(authorizedUsersTable)
       .values({
         discordId,
-        username,
+        username: username || discordId,
         avatar: avatar ?? null,
         authorizedBy: sessionUser.username,
         notes: notes ?? null,

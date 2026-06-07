@@ -64,7 +64,7 @@ export const ListAuthorizedUsersResponse = zod.array(ListAuthorizedUsersResponse
  */
 export const AddAuthorizedUserBody = zod.object({
   "discordId": zod.string(),
-  "username": zod.string(),
+  "username": zod.string().optional(),
   "avatar": zod.string().nullish(),
   "notes": zod.string().nullish()
 })

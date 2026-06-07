@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Terminal } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -24,8 +23,8 @@ export default function Login() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
@@ -35,34 +34,37 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
-      
-      <div className="max-w-md w-full text-center space-y-8 relative z-10">
-        <div className="flex justify-center mb-8">
-          <div className="w-24 h-24 rounded-2xl bg-sidebar border border-border flex items-center justify-center shadow-xl shadow-primary/20 rotate-3 transition-transform hover:rotate-0 duration-300">
-            <Terminal className="w-12 h-12 text-primary" />
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.03)_0%,_transparent_70%)] pointer-events-none" />
+
+      <div className="max-w-sm w-full relative z-10 space-y-8">
+        <div className="space-y-6">
+          <img
+            src="/boxfight-banner.png"
+            alt="! boxfight auto ad"
+            className="w-full rounded-lg border border-white/10 brightness-90 shadow-2xl shadow-black"
+          />
+          <div className="text-center space-y-1">
+            <h1 className="text-xl font-display font-black tracking-widest text-white uppercase">
+              ! boxfight auto ad
+            </h1>
+            <p className="font-mono text-[11px] text-white/30 tracking-[0.35em] uppercase">
+              command center
+            </p>
           </div>
         </div>
-        
-        <div className="space-y-2">
-          <h1 className="text-4xl md:text-5xl font-display font-black text-foreground tracking-tight">
-            ! boxfight shop
-          </h1>
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-widest">
-            Command Center
-          </p>
-        </div>
 
-        <div className="pt-8">
+        <div className="space-y-3">
           <Button
             size="lg"
-            className="w-full h-16 text-lg font-bold bg-[#5865F2] hover:bg-[#4752C4] text-white border-0 shadow-lg shadow-[#5865F2]/20"
+            className="w-full h-13 text-sm font-bold tracking-widest uppercase bg-[#5865F2] hover:bg-[#4752C4] text-white border-0 shadow-lg shadow-[#5865F2]/20"
             onClick={handleLogin}
           >
             Login with Discord
           </Button>
+          <p className="text-center font-mono text-[10px] text-white/20 tracking-wider">
+            authorized users only
+          </p>
         </div>
       </div>
     </div>
