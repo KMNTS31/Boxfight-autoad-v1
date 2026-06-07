@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api-server/api/:path*"
+    }
+  ],
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "boxfight-shop/dist",
+  "framework": "vite"
+}
