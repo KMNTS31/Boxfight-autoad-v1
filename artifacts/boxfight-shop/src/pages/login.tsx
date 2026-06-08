@@ -21,8 +21,8 @@ export default function Login() {
   });
 
   useEffect(() => {
-    const disclaimerAccepted = localStorage.getItem("disclaimer_accepted") === "true";
-    if (!disclaimerAccepted) {
+    const accepted = localStorage.getItem("disclaimer_accepted") === "true";
+    if (!accepted) {
       setLocationRef.current("/");
     } else if (user) {
       setLocationRef.current("/dashboard");
@@ -33,50 +33,59 @@ export default function Login() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-white/10 border-t-white/50 rounded-full animate-spin" />
       </div>
     );
   }
 
-  const handleLogin = () => {
-    window.location.href = "/api/auth/discord";
-  };
-
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_rgba(255,255,255,0.025)_0%,_transparent_100%)] pointer-events-none" />
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-5 relative overflow-hidden">
+      {/* Background glows */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_35%,rgba(255,255,255,0.022)_0%,transparent_100%)] pointer-events-none" />
+      <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-black to-transparent pointer-events-none" />
 
-      <div className="max-w-sm w-full relative z-10 space-y-7">
-        <div className="space-y-5">
-          <div className="overflow-hidden rounded-xl border border-white/[0.08] shadow-2xl shadow-black">
+      <div className="w-full max-w-xs relative z-10">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="relative mb-5">
+            <div className="absolute inset-0 rounded-full bg-white/5 blur-xl scale-110" />
             <img
-              src="/boxfight-banner.png"
-              alt="! boxfight auto ad"
-              className="w-full object-cover brightness-90"
+              src="/favicon.png"
+              alt="boxfight"
+              className="relative w-20 h-20 rounded-full border border-white/[0.12] object-cover shadow-2xl shadow-black"
             />
           </div>
-          <div className="text-center space-y-1">
-            <h1 className="font-gothic text-3xl text-white leading-none tracking-wide">
-              ! boxfight auto ad
-            </h1>
-            <p className="font-mono text-[10px] text-white/25 tracking-[0.4em] uppercase">
-              command center
-            </p>
-          </div>
+          <h1 className="font-gothic text-4xl text-white leading-none tracking-wide text-center">
+            ! boxfight
+          </h1>
+          <p className="font-mono text-[9px] text-white/20 tracking-[0.5em] uppercase mt-1.5">
+            auto ad
+          </p>
         </div>
 
-        <div className="space-y-2">
+        {/* Card */}
+        <div className="bg-[#0a0a0a] border border-white/[0.07] rounded-2xl p-6 shadow-2xl shadow-black/60 space-y-4">
+          <div className="text-center">
+            <p className="font-mono text-[10px] text-white/25 tracking-wider">sign in to continue</p>
+          </div>
+
           <Button
             size="lg"
-            className="w-full h-12 text-sm font-bold bg-[#5865F2] hover:bg-[#4752C4] active:bg-[#3b45b0] text-white border-0 shadow-lg shadow-[#5865F2]/20 transition-all duration-150 gap-3"
-            onClick={handleLogin}
+            className="w-full h-12 text-sm font-bold bg-[#5865F2] hover:bg-[#4a55d6] active:scale-[0.97] text-white border-0 shadow-lg shadow-[#5865F2]/25 hover:shadow-[#5865F2]/40 transition-all duration-150 gap-3 hover:-translate-y-px"
+            onClick={() => { window.location.href = "/api/auth/discord"; }}
           >
             <DiscordIcon className="w-5 h-5 shrink-0" />
             Login with Discord
           </Button>
-          <p className="text-center font-mono text-[10px] text-white/15 tracking-wider">
+
+          <p className="text-center font-mono text-[9px] text-white/15 tracking-wider">
             authorized users only · admins auto-approved
           </p>
+        </div>
+
+        {/* Banner preview */}
+        <div className="mt-5 overflow-hidden rounded-xl border border-white/[0.05] shadow-xl shadow-black/50 opacity-50">
+          <img src="/boxfight-banner.png" alt="" className="w-full object-cover max-h-24 brightness-75" />
         </div>
       </div>
     </div>

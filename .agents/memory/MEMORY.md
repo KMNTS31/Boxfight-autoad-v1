@@ -1,0 +1,2 @@
+- [Vercel deployment setup](vercel-setup.md) — how auth, sessions, and routing are wired for Vercel
+- [Session store pattern](session-store.md) — connect-pg-simple with DATABASE_URL fallback to MemoryStore

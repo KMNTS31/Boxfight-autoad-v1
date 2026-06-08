@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm --filter @workspace/boxfight-shop run build",
+  "outputDirectory": "artifacts/boxfight-shop/dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ]
+}

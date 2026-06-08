@@ -13,6 +13,7 @@ import TokenSettings from "@/pages/token-settings";
 import AccessDenied from "@/pages/access-denied";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/layout/app-shell";
+import { MouseGlow } from "@/components/mouse-glow";
 
 const queryClient = new QueryClient();
 
@@ -24,35 +25,16 @@ function Router() {
       <Route path="/access-denied" component={AccessDenied} />
 
       <Route path="/dashboard">
-        <AuthGuard>
-          <AppShell>
-            <Dashboard />
-          </AppShell>
-        </AuthGuard>
+        <AuthGuard><AppShell><Dashboard /></AppShell></AuthGuard>
       </Route>
-
       <Route path="/token-settings">
-        <AuthGuard>
-          <AppShell>
-            <TokenSettings />
-          </AppShell>
-        </AuthGuard>
+        <AuthGuard><AppShell><TokenSettings /></AppShell></AuthGuard>
       </Route>
-
       <Route path="/admin">
-        <AuthGuard requireAdmin>
-          <AppShell>
-            <Admin />
-          </AppShell>
-        </AuthGuard>
+        <AuthGuard requireAdmin><AppShell><Admin /></AppShell></AuthGuard>
       </Route>
-
       <Route path="/info">
-        <AuthGuard requireAdmin>
-          <AppShell>
-            <Info />
-          </AppShell>
-        </AuthGuard>
+        <AuthGuard requireAdmin><AppShell><Info /></AppShell></AuthGuard>
       </Route>
 
       <Route component={NotFound} />
@@ -64,6 +46,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <MouseGlow />
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>

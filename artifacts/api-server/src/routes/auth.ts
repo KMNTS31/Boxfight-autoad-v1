@@ -8,19 +8,30 @@ const ADMIN_IDS = ["1474928810888532061", "1487904327816446233", "15055957772866
 const router = Router();
 
 function getRedirectUri(): string {
+  // Explicit override (set this in Vercel dashboard: REDIRECT_URI=https://yourapp.vercel.app/api/auth/discord/callback)
+  if (process.env.REDIRECT_URI) return process.env.REDIRECT_URI;
+
+  // Vercel production URL (automatically set by Vercel)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/api/auth/discord/callback`;
+  }
+
+  // Replit production domains
   const domains = process.env.REPLIT_DOMAINS;
   if (domains) {
     const primaryDomain = domains.split(",")[0].trim();
     return `https://${primaryDomain}/api/auth/discord/callback`;
   }
+
+  // Replit dev domain
   const devDomain = process.env.REPLIT_DEV_DOMAIN;
   if (devDomain) {
     return `https://${devDomain}/api/auth/discord/callback`;
   }
+
   return `http://localhost:${process.env.PORT || 5000}/api/auth/discord/callback`;
 }
 
-// GET /api/auth/discord — start OAuth2 flow
 router.get("/auth/discord", (req, res) => {
   const clientId = process.env.DISCORD_CLIENT_ID;
   if (!clientId) {
@@ -37,24 +48,16 @@ router.get("/auth/discord", (req, res) => {
   res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
 });
 
-// GET /api/auth/discord/callback — handle OAuth2 callback
 router.get("/auth/discord/callback", async (req, res) => {
   const { code } = req.query as { code?: string };
-  if (!code) {
-    res.redirect("/?error=no_code");
-    return;
-  }
+  if (!code) { res.redirect("/?error=no_code"); return; }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    res.redirect("/?error=missing_config");
-    return;
-  }
+  if (!clientId || !clientSecret) { res.redirect("/?error=missing_config"); return; }
 
   try {
     const redirectUri = getRedirectUri();
-    // Exchange code for token
     const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -73,20 +76,12 @@ router.get("/auth/discord/callback", async (req, res) => {
       return;
     }
 
-    const tokenData = (await tokenRes.json()) as {
-      access_token: string;
-      token_type: string;
-    };
-
-    // Get user info
+    const tokenData = (await tokenRes.json()) as { access_token: string };
     const userRes = await fetch("https://discord.com/api/users/@me", {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
 
-    if (!userRes.ok) {
-      res.redirect("/login?error=user_fetch");
-      return;
-    }
+    if (!userRes.ok) { res.redirect("/login?error=user_fetch"); return; }
 
     const discordUser = (await userRes.json()) as {
       id: string;
@@ -97,8 +92,6 @@ router.get("/auth/discord/callback", async (req, res) => {
     };
 
     const isAdmin = ADMIN_IDS.includes(discordUser.id);
-
-    // Check if user is authorized
     let isAuthorized = isAdmin;
     if (!isAdmin) {
       const authUser = await db
@@ -113,7 +106,6 @@ router.get("/auth/discord/callback", async (req, res) => {
       ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
       : `https://cdn.discordapp.com/embed/avatars/${parseInt(discordUser.discriminator || "0") % 5}.png`;
 
-    // Store in session
     (req.session as any).user = {
       id: discordUser.id,
       username: discordUser.username,
@@ -131,27 +123,15 @@ router.get("/auth/discord/callback", async (req, res) => {
   }
 });
 
-// GET /api/auth/me
 router.get("/auth/me", (req, res) => {
   const user = (req.session as any).user;
-  if (!user) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
-  res.json({
-    ...user,
-    hasValidToken: false, // validated per-request on dashboard
-  });
+  if (!user) { res.status(401).json({ error: "Not authenticated" }); return; }
+  res.json({ ...user, hasValidToken: false });
 });
 
-// POST /api/auth/logout
 router.post("/auth/logout", (req, res) => {
   req.session.destroy((err) => {
-    if (err) {
-      logger.error({ err }, "Session destroy error");
-      res.status(500).json({ error: "Logout failed" });
-      return;
-    }
+    if (err) { logger.error({ err }, "Session destroy error"); res.status(500).json({ error: "Logout failed" }); return; }
     res.json({ success: true, message: "Logged out" });
   });
 });
