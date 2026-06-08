@@ -1,9 +1,7 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run build",
-  "outputDirectory": "artifacts/boxfight-shop/dist",
-  "rootDirectory": ".",
-  "env": {
-    "NODE_VERSION": "20"
-  }
+  "buildCommand": "pnpm --filter boxfight-shop build",
+  "outputDirectory": "artifacts/boxfight-shop/dist"
 }
