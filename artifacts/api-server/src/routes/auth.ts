@@ -8,10 +8,10 @@ const ADMIN_IDS = ["1474928810888532061", "1487904327816446233", "15055957772866
 const router = Router();
 
 function getRedirectUri(): string {
-  // Explicit override (set this in Vercel dashboard: REDIRECT_URI=https://yourapp.vercel.app/api/auth/discord/callback)
+  // Explicit override — set REDIRECT_URI in Vercel/Replit env for custom domains
   if (process.env.REDIRECT_URI) return process.env.REDIRECT_URI;
 
-  // Vercel production URL (automatically set by Vercel)
+  // Vercel: VERCEL_URL is automatically set on all deployments
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}/api/auth/discord/callback`;
   }
@@ -131,7 +131,11 @@ router.get("/auth/me", (req, res) => {
 
 router.post("/auth/logout", (req, res) => {
   req.session.destroy((err) => {
-    if (err) { logger.error({ err }, "Session destroy error"); res.status(500).json({ error: "Logout failed" }); return; }
+    if (err) {
+      logger.error({ err }, "Session destroy error");
+      res.status(500).json({ error: "Logout failed" });
+      return;
+    }
     res.json({ success: true, message: "Logged out" });
   });
 });
