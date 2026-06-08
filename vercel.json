@@ -1,10 +1,5 @@
 {
-  "version": 2,
-  "buildCommand": "pnpm install --frozen-lockfile && pnpm run build",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter boxfight-shop build",
   "outputDirectory": "artifacts/boxfight-shop/dist",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  "installCommand": "pnpm install --frozen-lockfile"
 }
